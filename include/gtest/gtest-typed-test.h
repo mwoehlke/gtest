@@ -166,6 +166,23 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, FooTest, MyTypes);
   typedef ::testing::internal::TypeList< Types >::type \
       GTEST_TYPE_PARAMS_(CaseName)
 
+// The 'Types' template argument below must have spaces around it
+// since some compilers may choke on '>>' when passing a template
+// instance (e.g. Types<int>)
+# define TYPED_TEST_CASE_WITH_NAMES(CaseName, ...) \
+  typedef ::testing::internal::TypeList< testing::Types< __VA_ARGS__ > >::type \
+      GTEST_TYPE_PARAMS_(CaseName); \
+  namespace testing { \
+  namespace internal { \
+  template <> \
+  ::std::string TypeParameterName< GTEST_TYPE_PARAMS_(CaseName) >(int index) { \
+    char const* _names = #__VA_ARGS__; \
+    while (index--) _names = SkipComma(_names); \
+    return GetPrefixUntilComma(_names); \
+  } \
+  } \
+  }
+
 # define TYPED_TEST(CaseName, TestName) \
   template <typename gtest_TypeParam_> \
   class GTEST_TEST_CLASS_NAME_(CaseName, TestName) \
@@ -180,6 +197,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, FooTest, MyTypes);
           CaseName, \
           ::testing::internal::TemplateSel< \
               GTEST_TEST_CLASS_NAME_(CaseName, TestName)>, \
+          GTEST_TYPE_PARAMS_(CaseName), \
           GTEST_TYPE_PARAMS_(CaseName)>::Register(\
               "", #CaseName, #TestName, 0); \
   template <typename gtest_TypeParam_> \

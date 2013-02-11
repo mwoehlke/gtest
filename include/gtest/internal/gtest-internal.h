@@ -568,6 +568,14 @@ inline std::string GetPrefixUntilComma(const char* str) {
   return comma == NULL ? str : std::string(str, comma);
 }
 
+// Returns the suffix name for the parameter type of a type parameterized test
+// at the specified index. The default implementation returns the index. This
+// is specialized by NAMED_TYPES_TEST_CASE.
+template <typename Types>
+inline ::std::string TypeParameterName(int index) {
+  return String::Format("%d", index);
+}
+
 // TypeParameterizedTest<Fixture, TestSel, Types>::Register()
 // registers a list of type-parameterized tests with Google Test.  The
 // return value is insignificant - we just need to return something
@@ -575,7 +583,7 @@ inline std::string GetPrefixUntilComma(const char* str) {
 //
 // Implementation note: The GTEST_TEMPLATE_ macro declares a template
 // template parameter.  It's defined in gtest-type-util.h.
-template <GTEST_TEMPLATE_ Fixture, class TestSel, typename Types>
+template <GTEST_TEMPLATE_ Fixture, class TestSel, typename Types, typename OriginalTypes>
 class TypeParameterizedTest {
  public:
   // 'index' is the index of the test in the type list 'Types'
@@ -591,8 +599,8 @@ class TypeParameterizedTest {
     // First, registers the first type-parameterized test in the type
     // list.
     MakeAndRegisterTestInfo(
-        String::Format("%s%s%s/%d", prefix, prefix[0] == '\0' ? "" : "/",
-                       case_name, index).c_str(),
+        String::Format("%s%s%s/%s", prefix, prefix[0] == '\0' ? "" : "/",
+                       case_name, TypeParameterName<OriginalTypes>(index).c_str()).c_str(),
         GetPrefixUntilComma(test_names).c_str(),
         GetTypeName<Type>().c_str(),
         NULL,  // No value parameter.
@@ -602,14 +610,14 @@ class TypeParameterizedTest {
         new TestFactoryImpl<TestClass>);
 
     // Next, recurses (at compile time) with the tail of the type list.
-    return TypeParameterizedTest<Fixture, TestSel, typename Types::Tail>
+    return TypeParameterizedTest<Fixture, TestSel, typename Types::Tail, OriginalTypes>
         ::Register(prefix, case_name, test_names, index + 1);
   }
 };
 
 // The base case for the compile time recursion.
-template <GTEST_TEMPLATE_ Fixture, class TestSel>
-class TypeParameterizedTest<Fixture, TestSel, Types0> {
+template <GTEST_TEMPLATE_ Fixture, class TestSel, typename OriginalTypes>
+class TypeParameterizedTest<Fixture, TestSel, Types0, OriginalTypes> {
  public:
   static bool Register(const char* /*prefix*/, const char* /*case_name*/,
                        const char* /*test_names*/, int /*index*/) {
@@ -621,7 +629,7 @@ class TypeParameterizedTest<Fixture, TestSel, Types0> {
 // registers *all combinations* of 'Tests' and 'Types' with Google
 // Test.  The return value is insignificant - we just need to return
 // something such that we can call this function in a namespace scope.
-template <GTEST_TEMPLATE_ Fixture, typename Tests, typename Types>
+template <GTEST_TEMPLATE_ Fixture, typename Tests, typename Types, typename OriginalTypes>
 class TypeParameterizedTestCase {
  public:
   static bool Register(const char* prefix, const char* case_name,
@@ -629,18 +637,18 @@ class TypeParameterizedTestCase {
     typedef typename Tests::Head Head;
 
     // First, register the first test in 'Test' for each type in 'Types'.
-    TypeParameterizedTest<Fixture, Head, Types>::Register(
+    TypeParameterizedTest<Fixture, Head, Types, OriginalTypes>::Register(
         prefix, case_name, test_names, 0);
 
     // Next, recurses (at compile time) with the tail of the test list.
-    return TypeParameterizedTestCase<Fixture, typename Tests::Tail, Types>
+    return TypeParameterizedTestCase<Fixture, typename Tests::Tail, Types, OriginalTypes>
         ::Register(prefix, case_name, SkipComma(test_names));
   }
 };
 
 // The base case for the compile time recursion.
-template <GTEST_TEMPLATE_ Fixture, typename Types>
-class TypeParameterizedTestCase<Fixture, Templates0, Types> {
+template <GTEST_TEMPLATE_ Fixture, typename Types, typename OriginalTypes>
+class TypeParameterizedTestCase<Fixture, Templates0, Types, OriginalTypes> {
  public:
   static bool Register(const char* /*prefix*/, const char* /*case_name*/,
                        const char* /*test_names*/) {
