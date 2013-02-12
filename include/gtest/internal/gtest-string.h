@@ -155,6 +155,9 @@ class GTEST_API_ String {
   // "<buffer exceeded>" is returned.
   static std::string Format(const char* format, ...);
 
+  // Removes leading and trailing whitespace from a string.
+  static std::string Trim(const char* input);
+
  private:
   String();  // Not meant to be instantiated.
 };  // class String

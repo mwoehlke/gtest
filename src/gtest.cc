@@ -1640,6 +1640,18 @@ std::string String::Format(const char * format, ...) {
   }
 }
 
+// Removes leading and trailing whitespace from a string.
+std::string String::Trim(const char* input) {
+  while (isspace(*input)) {
+    ++input;
+  }
+  size_t len = strlen(input);
+  while (len && isspace(input[len - 1])) {
+    --len;
+  }
+  return std::string(input, len);
+}
+
 // Converts the buffer in a stringstream to an std::string, converting NUL
 // bytes to "\\0" along the way.
 std::string StringStreamToString(::std::stringstream* ss) {

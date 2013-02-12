@@ -178,7 +178,7 @@ INSTANTIATE_TYPED_TEST_CASE_P(My, FooTest, MyTypes);
   ::std::string TypeParameterName< GTEST_TYPE_PARAMS_(CaseName) >(int index) { \
     char const* _names = #__VA_ARGS__; \
     while (index--) _names = SkipComma(_names); \
-    return GetPrefixUntilComma(_names); \
+    return String::Trim(GetPrefixUntilComma(_names).c_str()); \
   } \
   } \
   }
